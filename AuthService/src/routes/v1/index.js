@@ -22,4 +22,9 @@ router.get(
 router.get('/isAdmin',
     AuthRequestValidator.validateAdminRequest,
     UserController.isAdmin)
+
+
+
+
+
 module.exports = router

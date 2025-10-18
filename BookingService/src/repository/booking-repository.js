@@ -39,6 +39,17 @@ class BookingRepository{
         }
     }
 
+    async getAll(userId) {
+        try {
+            // This query finds all bookings. You can add a 'where' clause later
+            // to find bookings for a specific user.
+            const bookings = await Booking.findAll();
+            return bookings;
+        } catch (error) {
+            console.log('Something went wrong at repository layer');
+            throw error;
+        }
+    }
 }
 
 module.exports=BookingRepository

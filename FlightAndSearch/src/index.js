@@ -1,4 +1,5 @@
 const express = require('express')
+const cors=require('cors');
 const bodyParser = require('body-parser')
 
 const {PORT} =require('./config/serverConfig')
@@ -13,6 +14,7 @@ const db = require('./models/index')
 
 const setupAndStartServer =async()=>{
          const app= express()
+         app.use(cors());
          app.use(bodyParser.json())
           app.use(bodyParser.urlencoded({extended:true}))
 

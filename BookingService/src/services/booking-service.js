@@ -51,7 +51,36 @@ async createBooking(data){
         throw new ServiceError()
     }
 }
+async getAllBookings(userId) {
+        try {
+            // 1. Get all the raw bookings from the database
+            const bookings = await this.bookingRepository.getAll(userId);
 
+            // 2. Create a list of promises to fetch flight details for each booking
+            const flightRequestPromises = bookings.map(booking => 
+                axios.get(`${FLIGHT_SERVICE_PATH}/api/v1/flights/${booking.flightId}`)
+            );
+            
+            // 3. Wait for all flight details to come back
+            const flightResponses = await Promise.all(flightRequestPromises);
+            
+            // 4. Extract the actual flight data from each response
+            const flightData = flightResponses.map(response => response.data.data);
+
+            // 5. Combine the booking and flight data into the perfect object
+            const enrichedBookings = bookings.map((booking, index) => {
+                return {
+                    ...booking.toJSON(), // Convert Sequelize object to plain JSON
+                    flight: flightData[index] // Attach the flight details
+                };
+            });
+
+            return enrichedBookings;
+        } catch (error) {
+            console.log("Something went wrong in the service layer");
+            throw error;
+        }
+    }
 }
 
 module.exports =BookingService

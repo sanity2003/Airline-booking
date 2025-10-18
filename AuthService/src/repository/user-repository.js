@@ -58,14 +58,14 @@ async getByEmail(userEmail){
 }
 async isAdmin(userId){
     try{
-        const user =await User.findByPk(userId)
-        const adminRole = await Role.findOne({
-            where:{
-                name:'ADMIN'
-            }
-        })
-        console.log(adminRole)
-        return user.hasRole(adminRole)
+        const user = await User.findByPk(userId, {
+            include: [{
+                model: Role,
+                where: { name: 'ADMIN' },
+                required: true // This makes it an INNER JOIN
+            }]
+        });
+        return user !== null;
     }catch(error){
         console.log('Somthing went wrong at repository layer',error)
             throw error

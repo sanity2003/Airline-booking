@@ -1,81 +1,80 @@
-const express = require('express')
-const morgan = require('morgan')
-const { createProxyMiddleware } = require('http-proxy-middleware')
 
-const axios =require('axios')
 
-const rateLimit = require('express-rate-limit')
-const app = express()
+const express = require('express');
+const cors = require('cors');
+const morgan = require('morgan');
+const { createProxyMiddleware } = require('http-proxy-middleware');
+const rateLimit = require('express-rate-limit');
 
-const PORT =3004
+const app = express();
+const PORT = 3004;
 
+app.use(cors());
+app.use(morgan('combined'));
+
+// Rate Limiting
 const limiter = rateLimit({
-	windowMs: 6 * 60 * 1000, // 15 minutes
-	limit: 5, 
-	
-})
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+});
+app.use(limiter);
 
-app.use(limiter)
-app.use(morgan('combined'))
 
-// app.use('/bookingservice',async(req,res,next)=>{
-//     console.log(req.headers['x-access-token'])
-//     const response =await axios.get('http://localhost:3000/api/v1/isAuthenticated',{
-//         headers:{
-//             'x-accesstoken':req.headers['x-access-token']
-//         }
-//     })
-//     console.log(response.data)
-//     console.log('hi')
-//     next()
-// })
+// --- PROXY RULES FOR EACH SERVICE ---
 
-app.use('/bookingservice', async (req, res, next) => {
-    try {
-        const token = req.headers['x-access-token'];
-        console.log('Gateway Token:', token);
+// Common options for all proxies
+const commonOptions = {
+  changeOrigin: true,
+  timeout: 60000,
+  proxyTimeout: 60000,
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`[Gateway] Original Path: ${req.url} -> Forwarding to: ${proxyReq.host}${proxyReq.path}`);
+  }
+};
 
-        const response = await axios.get('http://localhost:3000/api/v1/isAuthenticated', {
-            headers: {
-                'x-access-token': token
-            }
-        });
+// Auth Service Proxy
+app.use(
+  '/authservice',
+  createProxyMiddleware({
+    ...commonOptions,
+    //  The target now includes the '/api' prefix
+    target: 'http://localhost:3000/api', 
+    //  We now just strip '/authservice' completely
+    pathRewrite: {
+      '^/authservice': '', 
+    },
+  })
+);
 
-        console.log('AuthService Response:', response.data);
+//  Flight & Search Service Proxy
+app.use(
+  '/flightservice',
+  createProxyMiddleware({
+    ...commonOptions,
+    target: 'http://localhost:3001/api', // Target includes '/api'
+    pathRewrite: {
+      '^/flightservice': '', // Strip the prefix
+    },
+  })
+);
 
-        // Attach user ID to request if needed
-        req.userId = response.data.data;
+//  Booking Service Proxy
+app.use(
+  '/bookingservice',
+  createProxyMiddleware({
+    ...commonOptions,
+    target: 'http://localhost:3002/api', // Target includes '/api'
+    pathRewrite: {
+      '^/bookingservice': '', // Strip the prefix
+    },
+  })
+);
 
-        if(response.data.success){
-            next();
-        }
-         else {
-            return res.status(401).json({
-                message:'Unauthorized'
-            })
-        }
-    } catch (error) {
-        console.log('AuthService Axios Error:', error.response?.data || error.message);
-        return res.status(401).json({
-            success: false,
-            message: 'Unauthorized',
-            
-        });
-    }
+
+app.get('/home', (req, res) => {
+  res.json({ message: 'API Gateway is alive and kicking!' });
 });
 
-
-
-app.use('/bookingservice',createProxyMiddleware({target:'http://localhost:3002/',changeOrigin:true}))
-
-app.get('/home',(req,res)=>{
-    return res.json({
-        message:'OK'
-    })
-})
-
-
-
- app.listen(PORT,()=>{
-    console.log(`Server started at port ${PORT}`)
- })
+app.listen(PORT, () => {
+  console.log(` API Gateway started on http://localhost:${PORT}`);
+});
