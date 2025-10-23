@@ -5,7 +5,7 @@ const {PORT}=require('./config/serverConfig')
 const app =express()
 const db = require('./models/index')
 const apiRoutes = require('./routes/index')
-
+const v1ApiRoutes = require('./routes/index')
 const setupAndStartServer =()=>{
     app.use(cors());
     app.use(bodyParser.json())
@@ -14,6 +14,8 @@ const setupAndStartServer =()=>{
     // app.get('/api/v1/home',(req,res)=>{
     //     return res.json({message:'Hitting the booking service'})
     // })
+    
+    app.use('/api', v1ApiRoutes);
 
     app.use('/api',apiRoutes)
 

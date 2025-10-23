@@ -12,6 +12,8 @@ import AdminPage from './pages/AdminPage';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 
+import Chatbot from './components/common/Chatbot';
+
 function App() {
   return (
     <Router>
@@ -31,6 +33,7 @@ function App() {
             </Routes>
           </main>
           <Footer />
+          <Chatbot />
         </div>
       </AuthProvider>
     </Router>
